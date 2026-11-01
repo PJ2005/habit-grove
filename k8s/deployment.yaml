@@ -20,15 +20,17 @@ spec:
           imagePullPolicy: Never
           env:
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:h2:mem:grove;DB_CLOSE_DELAY=-1"
+              value: "jdbc:postgresql://grove-db:5432/grove"
             - name: SPRING_DATASOURCE_USERNAME
-              value: "sa"
+              value: "grove"
             - name: SPRING_DATASOURCE_PASSWORD
-              value: ""
+              value: "grove-dev-password"
             - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-              value: "org.h2.Driver"
+              value: "org.postgresql.Driver"
             - name: SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
-              value: "org.hibernate.dialect.H2Dialect"
+              value: "org.hibernate.dialect.PostgreSQLDialect"
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "update"
           ports:
             - containerPort: 8080
           readinessProbe:

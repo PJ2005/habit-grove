@@ -24,6 +24,18 @@ pipeline {
             }
         }
 
+        stage('Deploy database') {
+            steps {
+                sh '''
+                    kubectl apply -f k8s/postgres/secret.yaml
+                    kubectl apply -f k8s/postgres/pvc.yaml
+                    kubectl apply -f k8s/postgres/service.yaml
+                    kubectl apply -f k8s/postgres/deployment.yaml
+                    kubectl rollout status deployment/grove-db --timeout=180s
+                '''
+            }
+        }
+
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
