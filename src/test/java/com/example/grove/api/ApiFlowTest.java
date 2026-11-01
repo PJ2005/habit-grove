@@ -166,4 +166,15 @@ class ApiFlowTest {
         newTree(owner);
         assertEquals(403, send("GET", "/users/" + stranger + "/friends/" + owner + "/tree", null).statusCode());
     }
+    
+    @Test
+    void cannotLogAnotherUsersHabit() throws Exception {
+        long owner = newUser();
+        long stranger = newUser();
+        long habit = newHabit(owner, "Reading", "POSITIVE", 2);
+        newTree(stranger);
+        HttpResponse<String> r = send("POST", "/users/" + stranger + "/logs",
+                "{\"habitId\":" + habit + ",\"quantity\":1}");
+        assertEquals(403, r.statusCode(), r.body());
+    }
 }

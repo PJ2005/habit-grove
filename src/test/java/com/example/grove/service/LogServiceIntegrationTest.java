@@ -8,7 +8,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,20 +25,21 @@ class LogServiceIntegrationTest {
     private Habit reading;
     private Tree tree;
 
+    private void setUp() {
+        user = userRepository.saveAndFlush(new AppUser("Test", "test@example.com", "STUDENT"));
+        reading = habitRepository.saveAndFlush(
+                new Habit(user, "Reading", HabitType.POSITIVE, 2, 5, true));
+        tree = treeRepository.saveAndFlush(new Tree(user, "Oak", "OAK"));
+    }
+
     @Test
     void loggingHabitCreatesSnapshotForThatDay() {
         setUp();
         LocalDate day = LocalDate.now().minusDays(1);
 
-        logService.logHabit(reading.getId(), day, 1);
+        logService.logHabit(user.getId(), reading.getId(), day, 1);
 
-        List<DailySnapshot> snapshots = snapshotRepository.findByTreeOrderByDayAsc(tree);
-        DailySnapshot snapshot = snapshots.stream()
-                .filter(s -> s.getDay().equals(day))
-                .findFirst()
-                .orElseThrow();
-
-        // Reading has weight 2, quantity 1 → 2 positive points → daily score 20
+        DailySnapshot snapshot = snapshotRepository.findByTreeAndDay(tree, day).orElseThrow();
         assertEquals(2, snapshot.getPositivePoints());
         assertEquals(0, snapshot.getNegativePoints());
         assertEquals(20, snapshot.getDailyScore());
@@ -50,10 +50,9 @@ class LogServiceIntegrationTest {
         setUp();
         LocalDate day = LocalDate.now();
 
-        // 10 logs of reading (weight 2) would be 20 points,
-        // but the cap is dailyTarget × weight = 5 × 2 = 10
+        // Cap is dailyTarget x weight = 5 x 2 = 10 points
         for (int i = 0; i < 10; i++) {
-            logService.logHabit(reading.getId(), day, 1);
+            logService.logHabit(user.getId(), reading.getId(), day, 1);
         }
 
         DailySnapshot snapshot = snapshotRepository.findByTreeAndDay(tree, day).orElseThrow();
@@ -65,23 +64,16 @@ class LogServiceIntegrationTest {
     void negativeHabitLowersDailyScore() {
         setUp();
         LocalDate day = LocalDate.now();
-        Habit doomscroll = habitRepository.save(
+        Habit doomscroll = habitRepository.saveAndFlush(
                 new Habit(user, "Doomscrolling", HabitType.NEGATIVE, 2, 1, false));
 
-        logService.logHabit(reading.getId(), day, 2);   // 4 positive
-        logService.logHabit(doomscroll.getId(), day, 1); // 4 negative, counts double
+        logService.logHabit(user.getId(), reading.getId(), day, 2);    // 4 positive
+        logService.logHabit(user.getId(), doomscroll.getId(), day, 1); // 2 weight x 1 = 2 negative
 
         DailySnapshot snapshot = snapshotRepository.findByTreeAndDay(tree, day).orElseThrow();
         assertEquals(4, snapshot.getPositivePoints());
         assertEquals(2, snapshot.getNegativePoints());
-        // dailyScore = 100 * (4 - 2*2) / 10 = 0, clamped at 0
+        // 100 * (4 - 2*2) / 10 = 0
         assertEquals(0, snapshot.getDailyScore());
-    }
-
-    private void setUp() {
-        user = userRepository.save(new AppUser("Test", "test@example.com", "STUDENT"));
-        reading = habitRepository.save(
-                new Habit(user, "Reading", HabitType.POSITIVE, 2, 5, true));
-        tree = treeRepository.save(new Tree(user, "Oak", "OAK"));
     }
 }

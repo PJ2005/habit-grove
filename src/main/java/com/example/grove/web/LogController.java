@@ -24,7 +24,7 @@ public class LogController {
     @ResponseStatus(HttpStatus.CREATED)
     public LogResponse log(@PathVariable Long userId, @RequestBody LogRequest req) {
         LocalDate day = req.occurredOn() != null ? req.occurredOn() : LocalDate.now();
-        var log = logService.logHabit(req.habitId(), day, req.quantity());
+                var log = logService.logHabit(userId, req.habitId(), day, req.quantity());
         return new LogResponse(log.getId(), log.getOccurredOn(), log.getQuantity());
     }
 }

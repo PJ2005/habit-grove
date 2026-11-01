@@ -30,10 +30,15 @@ public class LogService {
      * then rebuilds the tree's scores from that day onward.
      */
     @Transactional
-    public HabitLog logHabit(Long habitId, LocalDate occurredOn, int quantity) {
+    public HabitLog logHabit(Long userId, Long habitId, LocalDate occurredOn, int quantity) {
         Habit habit = habitRepository.findById(habitId)
-                        .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
                         org.springframework.http.HttpStatus.NOT_FOUND, "Habit not found: " + habitId));
+
+        if (!habit.getUser().getId().equals(userId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Habit does not belong to this user");
+        }
 
         HabitLog log = logRepository.save(
                 new HabitLog(habit, habit.getUser(), occurredOn, quantity));
