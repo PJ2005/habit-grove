@@ -30,6 +30,9 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public IdResponse createUser(@RequestBody CreateUserRequest req) {
+        if (users.findByEmail(req.email()).isPresent()) {
+        throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
         AppUser user = users.save(new AppUser(req.name(), req.email(), req.targetProfile()));
         return new IdResponse(user.getId());
     }
